@@ -10,7 +10,8 @@ from adapters.web.routes import router
 app = FastAPI(title="Система управління складом комп'ютерної техніки")
 
 # Підключення механізму сесій (необхідно для збереження стану Кошика та Збірки ПК)
-app.add_middleware(SessionMiddleware, secret_key="super-secret-key-for-coursework")
+app.add_middleware(SessionMiddleware,
+                   secret_key="super-secret-key-for-coursework")
 
 templates = Jinja2Templates(directory="templates")
 
@@ -18,6 +19,8 @@ templates = Jinja2Templates(directory="templates")
 app.include_router(router)
 
 # Глобальний обробник винятків (надійна система обробки винятків)
+
+
 @app.exception_handler(ValueError)
 async def value_error_handler(request: Request, exc: ValueError):
     """
@@ -27,8 +30,8 @@ async def value_error_handler(request: Request, exc: ValueError):
     request.session["flash_error"] = str(exc)
     # Повертаємо на головну сторінку з повідомленням про помилку
     return templates.TemplateResponse(
-        "index.html", 
-        {"request": request}, 
+        "index.html",
+        {"request": request},
         status_code=400
     )
 

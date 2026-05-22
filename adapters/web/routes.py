@@ -15,10 +15,12 @@ from adapters.web.dependencies import get_catalog_service, get_builder_service, 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
+
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """Головне вікно адміністратора"""
     return templates.TemplateResponse("index.html", {"request": request})
+
 
 @router.post("/register")
 async def register_client(
@@ -31,14 +33,16 @@ async def register_client(
 ):
     """Реєстрація клієнта з валідацією Pydantic"""
     try:
-        new_user = User(email=email, first_name=first_name, last_name=last_name, phone=phone)
+        new_user = User(email=email, first_name=first_name,
+                        last_name=last_name, phone=phone)
         await order_service.user_repo.create(new_user)
         # Додаємо повідомлення про успіх у сесію
         request.session["flash_message"] = f"Клієнта {email} успішно зареєстровано!"
     except Exception as e:
         request.session["flash_error"] = f"Помилка реєстрації: {str(e)}"
-    
+
     return RedirectResponse(url="/", status_code=303)
+
 
 @router.get("/search", response_class=HTMLResponse)
 async def global_search(
@@ -48,31 +52,33 @@ async def global_search(
 ):
     """Глобальний пошук по всіх категоріях"""
     # Додали pc_builds, щоб пошук працював і по готових збірках теж!
-    categories = ["CPU", "Motherboard", "Memory", "GPU", "Case", "Cooler", "Storage", "PSU", "pc_builds"]
+    categories = ["CPU", "Motherboard", "Memory", "GPU",
+                  "Case", "Cooler", "Storage", "PSU", "pc_builds"]
     results = []
     for cat in categories:
         items = await catalog_service.search_by_name(cat, q)
         # Додаємо назву категорії до кожного знайденого товару
         for item in items:
-            item["category"] = cat 
+            item["category"] = cat
         results.extend(items)
-        
+
     return templates.TemplateResponse("catalog.html", {
-        "request": request, 
-        "category": "Результати пошуку", 
-        "items": results, 
+        "request": request,
+        "category": "Результати пошуку",
+        "items": results,
         "page": 1,
         # ФІКС: передаємо порожні словники, щоб HTML-шаблон не видавав помилку
-        "current_filters": {}, 
+        "current_filters": {},
         "forced_filters": {},
         "base_query_string": f"&q={q}"
     })
 
+
 @router.get("/catalog/{category}", response_class=HTMLResponse)
 async def catalog(
-    request: Request, 
-    category: str, 
-    page: int = 1, 
+    request: Request,
+    category: str,
+    page: int = 1,
     search: Optional[str] = None,
     catalog_service: CatalogService = Depends(get_catalog_service),
     builder_service: BuilderService = Depends(get_builder_service)
@@ -81,8 +87,9 @@ async def catalog(
     if category.lower() == "pc_builds":
         formatted_cat = "pc_builds"
     else:
-        formatted_cat = category.capitalize() if category.lower() not in ["cpu", "gpu", "psu"] else category.upper()
-    
+        formatted_cat = category.capitalize() if category.lower() not in [
+            "cpu", "gpu", "psu"] else category.upper()
+
     if search:
         items = await catalog_service.search_by_name(formatted_cat, search)
         filters = {}
@@ -94,43 +101,46 @@ async def catalog(
         filters = {}
         query_params_dict = {}
         query_params_for_url = {}
-        
+
         for k, v in query_params.multi_items():
             if k != "page":
                 if k not in query_params_for_url:
                     query_params_for_url[k] = []
                 query_params_for_url[k].append(v)
-                
-            if k in ["page", "search", "for_build"]: continue
-            
+
+            if k in ["page", "search", "for_build"]:
+                continue
+
             if k not in filters:
                 filters[k] = []
                 query_params_dict[k] = []
             filters[k].append(v)
             query_params_dict[k].append(v)
-            
+
         forced_filters = {}
         if query_params.get("for_build"):
             build_state = request.session.get("build", {})
-            forced_filters = builder_service.get_forced_filters(build_state, formatted_cat)
+            forced_filters = builder_service.get_forced_filters(
+                build_state, formatted_cat)
             for k, v in forced_filters.items():
                 filters[k] = [v] if not isinstance(v, list) else v
 
         items = await catalog_service.get_filtered_catalog(formatted_cat, page=page, filters=filters)
-        
+
         base_query_string = urlencode(query_params_for_url, doseq=True)
         if base_query_string:
             base_query_string = "&" + base_query_string
-        
+
     return templates.TemplateResponse("catalog.html", {
-        "request": request, 
-        "category": formatted_cat, 
-        "items": items, 
+        "request": request,
+        "category": formatted_cat,
+        "items": items,
         "page": page,
         "forced_filters": forced_filters,
         "current_filters": query_params_dict,
         "base_query_string": base_query_string
     })
+
 
 @router.post("/cart/add")
 async def add_to_cart(
@@ -142,7 +152,7 @@ async def add_to_cart(
     catalog_service: CatalogService = Depends(get_catalog_service)
 ):
     cart = request.session.get("cart", [])
-    
+
     # ФІКС: Якщо додають готову збірку - розпаковуємо її на 8 окремих деталей
     if category.lower() == "pc_builds":
         build = await catalog_service.component_repo.get_by_name("pc_builds", name)
@@ -159,25 +169,27 @@ async def add_to_cart(
                             break
                     if not found:
                         cart.append({
-                            "category": comp_cat, 
-                            "name": comp_name, 
-                            "price": float(comp_doc.get("price", 0)), 
+                            "category": comp_cat,
+                            "name": comp_name,
+                            "price": float(comp_doc.get("price", 0)),
                             "quantity": quantity
                         })
             request.session["cart"] = cart
             request.session["flash_message"] = f"Всі 8 компонентів збірки '{name}' розпаковано і додано до кошика!"
             return RedirectResponse(url="/cart", status_code=303)
-            
+
     # Стандартна логіка для окремих деталей (CPU, GPU тощо)
     for item in cart:
         if item["name"] == name:
             item["quantity"] += quantity
             request.session["cart"] = cart
             return RedirectResponse(url="/cart", status_code=303)
-            
-    cart.append({"category": category, "name": name, "price": price, "quantity": quantity})
+
+    cart.append({"category": category, "name": name,
+                "price": price, "quantity": quantity})
     request.session["cart"] = cart
     return RedirectResponse(url="/cart", status_code=303)
+
 
 @router.get("/cart", response_class=HTMLResponse)
 async def view_cart(request: Request):
@@ -185,6 +197,7 @@ async def view_cart(request: Request):
     cart = request.session.get("cart", [])
     total = sum(item["price"] * item["quantity"] for item in cart)
     return templates.TemplateResponse("cart.html", {"request": request, "cart": cart, "total": total})
+
 
 @router.post("/cart/checkout")
 async def checkout(
@@ -197,27 +210,30 @@ async def checkout(
     if not cart:
         request.session["flash_error"] = "Кошик порожній."
         return RedirectResponse(url="/cart", status_code=303)
-        
+
     try:
         order_id = await order_service.checkout(email, cart)
-        request.session["cart"] = [] # Очищуємо кошик після успіху
+        request.session["cart"] = []  # Очищуємо кошик після успіху
         request.session["flash_message"] = f"Замовлення {order_id} створено! Чек відправлено на {email}."
     except ValueError as e:
         request.session["flash_error"] = str(e)
-        
+
     return RedirectResponse(url="/", status_code=303)
+
 
 @router.get("/builder", response_class=HTMLResponse)
 async def pc_builder(request: Request):
     """Головне вікно конфігуратора ПК"""
     build = request.session.get("build", {})
     # Послідовність збірки ПК
-    categories = ["CPU", "Motherboard", "Memory", "Storage", "Cooler", "GPU", "Case", "PSU"]
+    categories = ["CPU", "Motherboard", "Memory",
+                  "Storage", "Cooler", "GPU", "Case", "PSU"]
     return templates.TemplateResponse("builder.html", {"request": request, "build": build, "categories": categories})
+
 
 @router.get("/orders", response_class=HTMLResponse)
 async def closed_orders(
-    request: Request, 
+    request: Request,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     order_service: OrderService = Depends(get_order_service)
@@ -225,7 +241,7 @@ async def closed_orders(
     """Закриті замовлення (чеки) з фільтром по даті"""
     orders = await order_service.get_filtered_orders(start_date, end_date)
     return templates.TemplateResponse("orders.html", {
-        "request": request, 
+        "request": request,
         "orders": orders,
         "start_date": start_date,
         "end_date": end_date
@@ -233,31 +249,35 @@ async def closed_orders(
 
 # --- ОБРОБНИКИ ДЛЯ ПОСТАВКИ (SUPPLY) ---
 
+
 @router.get("/supply", response_class=HTMLResponse)
 async def view_supply(request: Request):
     """Відображає вікно поставки"""
     return templates.TemplateResponse("supply.html", {"request": request})
 
+
 @router.post("/supply/add")
 async def add_to_supply(request: Request, category: str = Form(...), name: str = Form(...)):
     """Додає товар у список поставки (в сесію)"""
     supply_cart = request.session.get("supply_cart", [])
-    
+
     for item in supply_cart:
         if item["name"] == name:
             item["quantity"] += 1
             request.session["supply_cart"] = supply_cart
             return RedirectResponse(url="/supply", status_code=303)
-            
+
     supply_cart.append({"category": category, "name": name, "quantity": 1})
     request.session["supply_cart"] = supply_cart
     return RedirectResponse(url="/supply", status_code=303)
+
 
 @router.post("/supply/clear")
 async def clear_supply(request: Request):
     """Очищує каталог поставки у випадку помилки адміністратора"""
     request.session["supply_cart"] = []
     return RedirectResponse(url="/supply", status_code=303)
+
 
 @router.post("/supply/commit")
 async def commit_supply(
@@ -271,7 +291,7 @@ async def commit_supply(
         return RedirectResponse(url="/supply", status_code=303)
 
     form_data = await request.form()
-    
+
     # Зчитуємо змінену кількість для кожного товару з HTML-форми
     for i, item in enumerate(supply_cart, start=1):
         qty_key = f"quantity_{i}"
@@ -280,7 +300,7 @@ async def commit_supply(
 
     # Збільшуємо кількість кожної позиції у базі даних (виклик бізнес-логіки)
     await order_service.receive_supply(supply_cart)
-    
+
     request.session["supply_cart"] = []
     request.session["flash_message"] = "Поставку успішно прийнято! Склад оновлено."
     return RedirectResponse(url="/", status_code=303)
@@ -296,12 +316,13 @@ async def add_to_build(
     catalog_service: CatalogService = Depends(get_catalog_service)
 ):
     build = request.session.get("build", {})
-    
+
     if category.lower() == "pc_builds":
         formatted_cat = "pc_builds"
     else:
-        formatted_cat = category.capitalize() if category.lower() not in ["cpu", "gpu", "psu"] else category.upper()
-    
+        formatted_cat = category.capitalize() if category.lower() not in [
+            "cpu", "gpu", "psu"] else category.upper()
+
     component = await catalog_service.component_repo.get_by_name(formatted_cat, name)
     if component:
         # ФІКС 1: Зберігаємо лише необхідні поля, щоб уникнути переповнення Cookie (4KB)
@@ -313,11 +334,12 @@ async def add_to_build(
         for key in ["socket", "power", "size", "supported_memory_type"]:
             if key in component and component[key] is not None:
                 minimal_component[key] = component[key]
-                
+
         build[formatted_cat] = minimal_component
         request.session["build"] = build
 
-    build_order = ["CPU", "Motherboard", "Memory", "Storage", "Cooler", "GPU", "Case", "PSU"]
+    build_order = ["CPU", "Motherboard", "Memory",
+                   "Storage", "Cooler", "GPU", "Case", "PSU"]
     try:
         current_idx = build_order.index(formatted_cat)
         if current_idx + 1 < len(build_order):
@@ -325,8 +347,9 @@ async def add_to_build(
             return RedirectResponse(url=f"/catalog/{next_cat}?for_build=true", status_code=303)
     except ValueError:
         pass
-        
+
     return RedirectResponse(url="/builder", status_code=303)
+
 
 @router.post("/builder/save")
 async def save_build(
@@ -341,7 +364,7 @@ async def save_build(
 
     components_names = {cat: item["name"] for cat, item in build.items()}
     success = await builder_service.save_build(build_name, components_names)
-    
+
     if success:
         # Додаємо всі компоненти зі збірки у загальний кошик покупок
         cart = request.session.get("cart", [])
@@ -353,7 +376,7 @@ async def save_build(
                 "quantity": 1
             })
         request.session["cart"] = cart
-        request.session["build"] = {} 
+        request.session["build"] = {}
         request.session["flash_message"] = f"Збірку '{build_name}' збережено! Всі комплектуючі додано в кошик."
         return RedirectResponse(url="/", status_code=303)
     else:
@@ -361,11 +384,13 @@ async def save_build(
         return RedirectResponse(url="/builder", status_code=303)
 # --- ДОДАТКОВІ ОБРОБНИКИ ЗГІДНО ШАБЛОНІВ ---
 
+
 @router.post("/cart/clear")
 async def clear_cart(request: Request):
     """Очищення кошика"""
     request.session["cart"] = []
     return RedirectResponse(url="/cart", status_code=303)
+
 
 @router.get("/client-info")
 async def client_info(
@@ -375,11 +400,12 @@ async def client_info(
 ):
     """Отримання інформації про клієнта з модального вікна"""
     user = await order_service.user_repo.get_by_email(email)
-    
+
     if not user:
         request.session["flash_error"] = f"Клієнта з email '{email}' не знайдено."
     else:
-        orders_text = ", ".join(user.order_ids) if user.order_ids else "Немає минулих замовлень"
+        orders_text = ", ".join(
+            user.order_ids) if user.order_ids else "Немає минулих замовлень"
         request.session["flash_message"] = f"Клієнт: {user.first_name} {user.last_name} | Телефон: {user.phone} | Історія чеків: {orders_text}"
-        
+
     return RedirectResponse(url="/", status_code=303)

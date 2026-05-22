@@ -8,9 +8,9 @@ from core.services.builder_service import BuilderService
 from core.services.order_service import OrderService
 
 from adapters.database.mongo_repository import (
-    MongoComponentRepository, 
-    MongoUserRepository, 
-    MongoOrderRepository, 
+    MongoComponentRepository,
+    MongoUserRepository,
+    MongoOrderRepository,
     MongoPCBuildRepository
 )
 from adapters.email.smtp_email import GoogleSMTPAdapter
@@ -22,23 +22,28 @@ load_dotenv()
 print("EMAIL З .ENV:", os.getenv("SMTP_EMAIL"))
 print("PASSWORD З .ENV:", os.getenv("SMTP_PASSWORD"))
 # Ініціалізація підключення до MongoDB
-client = AsyncIOMotorClient(os.getenv("MONGO_URI", "mongodb://localhost:27017/"))
+client = AsyncIOMotorClient(
+    os.getenv("MONGO_URI", "mongodb://localhost:27017/"))
 db = client['pc_warehouse']
 
 # Налаштування Email Адаптера через змінні середовища
 email_adapter = GoogleSMTPAdapter(
-    sender_email=os.getenv("SMTP_EMAIL"), 
+    sender_email=os.getenv("SMTP_EMAIL"),
     app_password=os.getenv("SMTP_PASSWORD")
 )
 
 # Фабричні функції для FastAPI Depends
+
+
 def get_catalog_service() -> CatalogService:
     repo = MongoComponentRepository(db)
     return CatalogService(repo)
 
+
 def get_builder_service() -> BuilderService:
     repo = MongoPCBuildRepository(db)
     return BuilderService(repo)
+
 
 def get_order_service() -> OrderService:
     order_repo = MongoOrderRepository(db)

@@ -6,6 +6,7 @@ from core.models.user import User
 from core.models.order import Order
 from core.models.pc_build import PCBuild
 
+
 class MongoComponentRepository(IComponentRepository):
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
@@ -34,7 +35,8 @@ class MongoUserRepository(IUserRepository):
     async def get_by_email(self, email: str) -> Optional[User]:
         doc = await self.db['users'].find_one({"email": email})
         if doc:
-            doc['_id'] = str(doc['_id']) # ДОДАНО: перетворення ObjectId у рядок
+            # ДОДАНО: перетворення ObjectId у рядок
+            doc['_id'] = str(doc['_id'])
             return User(**doc)
         return None
 
@@ -63,8 +65,10 @@ class MongoOrderRepository(IOrderRepository):
         cursor = self.db['orders'].find({})
         docs = await cursor.to_list(length=None)
         for doc in docs:
-            doc['_id'] = str(doc['_id']) # ДОДАНО: перетворення ObjectId у рядок
+            # ДОДАНО: перетворення ObjectId у рядок
+            doc['_id'] = str(doc['_id'])
         return [Order(**doc) for doc in docs]
+
 
 class MongoPCBuildRepository(IPCBuildRepository):
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -77,6 +81,7 @@ class MongoPCBuildRepository(IPCBuildRepository):
     async def get_by_name(self, name: str) -> Optional[PCBuild]:
         doc = await self.db['pc_builds'].find_one({"name": name})
         if doc:
-            doc['_id'] = str(doc['_id']) # ДОДАНО: перетворення ObjectId у рядок
+            # ДОДАНО: перетворення ObjectId у рядок
+            doc['_id'] = str(doc['_id'])
             return PCBuild(**doc)
         return None
