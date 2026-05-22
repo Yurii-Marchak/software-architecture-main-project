@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% set filter_schema = {
+    'cpu': {
+        'brand': ['AMD', 'Intel'],
+        'coreCount': [2, 3, 4, 6, 8, 10, 12, 16, 24, 32, 64],
+        'threadCount': [2, 3, 4, 6, 8, 12, 16, 20, 24, 32, 48, 64, 128],
+        'socket': ['AM3', 'AM4', 'AM5', 'LGA 1151', 'LGA 1200', 'LGA 1700', 'TRX40', 'X399']
+    },
+    'motherboard': {
+        'brand': ['AMD', 'Intel'],
+        'socket': ['AM3', 'AM4', 'AM5', 'LGA 1151', 'LGA 1200', 'LGA 1700', 'TRX40', 'X399'],
+        'size': ['ATX', 'ITX', 'MicroATX'],
+        'supported_memory_type': ['DDR3', 'DDR4', 'DDR5'],
+        'max_memory_sticks': [2, 4, 6, 8]
+    },
+    'memory': {
+        'type': ['DDR3', 'DDR4', 'DDR5'],
+        'CAS_latency': ['CL10', 'CL11', 'CL12', 'CL14', 'CL16', 'CL18', 'CL22', 'CL30', 'CL32', 'CL36', 'CL40']
+    },
+    'gpu': {
+        'brand': ['AMD', 'NVIDIA'],
+        'resolution': ['1080p', '1080p/1440p', '1440p', '1440p/4K', '4K'],
+        'VRAM': [2, 4, 6, 8, 10, 11, 12, 16, 20, 24]
+    },
+    'case': {
+        'size': ['ATX', 'ITX', 'MicroATX']
+    },
+    'cooler': {
+        'type': ['air', 'liquid'],
+        'socket': ['AM3', 'AM4', 'AM5', 'LGA 1151', 'LGA 1200', 'LGA 1700', 'TRX40', 'X399']
+    },
+    'storage': {
+        'type': ['HDD', 'NVME', 'SATA'],
+        'space': [250, 500, 1000, 2000]
+    },
+    'psu': {
+        'size': ['ATX', 'SFX']
+    }
+} %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Каталог: {{ category | upper }}</h2>
+    {% if request.query_params.get('for_build') %}
+        <span class="badge bg-primary fs-5">Режим конфігуратора ПК</span>
+    {% endif %}
+    <a href="/" class="btn btn-secondary">На головну</a>
+</div>
+
+<form action="/catalog/{{ category }}" method="get" class="mb-4 text-center">
+    <div class="input-group w-50 mx-auto">
+        {% if request.query_params.get('for_build') %}
+            <input type="hidden" name="for_build" value="true">
+        {% endif %}
+        <input type="text" name="search" class="form-control" placeholder="Пошук за назвою у розділі {{ category }}...">
+        <button class="btn btn-primary" type="submit">Шукати</button>
+    </div>
+</form>
+
+<div class="row">
+    <div class="col-md-9">
+        {% for item in items %}
+        <div class="card mb-3 shadow-sm border-{{ 'primary' if request.query_params.get('for_build') else 'light' }}">
+            <div class="row g-0">
+                <div class="col-md-2 p-2 text-center align-self-center">
+                    <img src="{{ item.image }}" class="img-fluid rounded" alt="Фото" style="max-height: 120px;">
+                </div>
+                <div class="col-md-7">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ item.name }}</h5>
+                        <p class="card-text text-muted mb-2">
+                            Ціна: <b>${{ item.price | default(0, true) }}</b> 
+                            {% if category|lower != 'pc_builds' %}
+                                | На складі: {{ item.stock | default(0, true) }} шт.
+                            {% endif %}
+                        </p>
+                        
+                        {% if category|lower == 'pc_builds' %}
+                            <ul class="list-group list-group-flush mb-2" style="font-size: 0.85em;">
+                                {% for c_cat, c_doc in item.get('components_details', {}).items() %}
+                                <li class="list-group-item p-1 bg-transparent border-0 border-bottom">
+                                    <b class="text-uppercase">{{ c_cat }}:</b> <span class="text-primary">{{ c_doc.name }}</span><br>
+                                    <div class="mt-1">
+                                        {% for key, val in c_doc.items() %}
+                                            {% if key not in ['_id', 'id', 'name', 'image', 'url', 'price', 'stock', 'category', 'partType'] %}
+                                                <span class="badge bg-light text-dark border">{{ key }}: {{ val }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="card-text" style="font-size: 0.9em;">
+                                {% for key, val in item.items() %}
+                                    {% if key not in ['_id', 'id', 'name', 'image', 'url', 'price', 'stock', 'category', 'components', 'components_details'] %}
+                                        <span class="badge bg-secondary">{{ key }}: {{ val }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </p>
+                        {% endif %}
+                        
+                        {% if item.url %}
+                        <a href="{{ item.url }}" target="_blank" class="text-decoration-none mt-2 d-inline-block">Детальніше на сайті</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3 p-3 text-end align-self-center">
+                    {% if request.query_params.get('for_build') %}
+                    <form action="/builder/add" method="post" class="mb-2">
+                        <input type="hidden" name="category" value="{{ category }}">
+                        <input type="hidden" name="name" value="{{ item.name }}">
+                        <button type="submit" class="btn btn-primary w-100 fw-bold">Додати до збірки</button>
+                    </form>
+                    {% else %}
+                    <form action="/cart/add" method="post" class="mb-2">
+                        <input type="hidden" name="category" value="{{ category }}">
+                        <input type="hidden" name="name" value="{{ item.name }}">
+                        <input type="hidden" name="price" value="{{ item.price | default(0, true) }}">
+                        <button type="submit" class="btn btn-warning w-100">Додати в кошик</button>
+                    </form>
+                    <form action="/supply/add" method="post">
+                        <input type="hidden" name="category" value="{{ category }}">
+                        <input type="hidden" name="name" value="{{ item.name }}">
+                        <button type="submit" class="btn btn-outline-success w-100">Прийняти поставку</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">Комплектуючих за такими фільтрами не знайдено.</div>
+        {% endfor %}
+
+        <div class="text-center mt-4">
+            {% set build_param = "&for_build=true" if request.query_params.get('for_build') else "" %}
+            
+            {% if page > 1 %}
+            <a href="/catalog/{{ category|lower }}?page={{ page - 1 }}{{ base_query_string }}" class="btn btn-outline-dark">&larr; Попередня сторінка</a>
+            {% endif %}
+            <a href="/catalog/{{ category|lower }}?page={{ page + 1 }}{{ base_query_string }}" class="btn btn-outline-dark">Наступна сторінка &rarr;</a>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm sticky-top" style="top: 20px;">
+            <div class="card-body">
+                <h5 class="card-title text-center">Фільтри</h5>
+                <hr>
+                <form action="/catalog/{{ category }}" method="get">
+                    {% if request.query_params.get('for_build') %}
+                        <input type="hidden" name="for_build" value="true">
+                    {% endif %}
+
+                    {% if forced_filters and forced_filters.get('min_power') %}
+                    <div class="alert alert-warning p-2 small text-center mb-3">
+                        <b>Примусовий фільтр:</b><br>
+                        Мінімальна потужність: {{ forced_filters['min_power'][0] }}W
+                        <input type="hidden" name="min_power" value="{{ forced_filters['min_power'][0] }}">
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Ціна ($)</label>
+                        <div class="d-flex">
+                            <input type="number" name="min_price" class="form-control form-control-sm me-1" placeholder="Від" value="{{ current_filters.get('min_price', [''])[0] }}">
+                            <input type="number" name="max_price" class="form-control form-control-sm ms-1" placeholder="До" value="{{ current_filters.get('max_price', [''])[0] }}">
+                        </div>
+                    </div>
+
+                    {% if category|lower == 'memory' %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Частота пам'яті (MHz)</label>
+                        <div class="d-flex">
+                            <input type="number" name="min_frequency" class="form-control form-control-sm me-1" placeholder="Від" value="{{ current_filters.get('min_frequency', [''])[0] }}">
+                            <input type="number" name="max_frequency" class="form-control form-control-sm ms-1" placeholder="До" value="{{ current_filters.get('max_frequency', [''])[0] }}">
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if filter_schema.get(category|lower) %}
+                        {% for filter_key, filter_values in filter_schema[category|lower].items() %}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-capitalize">{{ filter_key }}</label>
+                                <div class="filter-scroll" style="max-height: 150px; overflow-y: auto;">
+                                    {% for val in filter_values %}
+                                        {% set is_forced = forced_filters.get(filter_key) and (forced_filters[filter_key]|string == val|string) %}
+                                        {% set is_disabled = forced_filters.get(filter_key) and not is_forced %}
+                                        
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="{{ filter_key }}" value="{{ val }}" 
+                                                {% if is_forced or val|string in current_filters.get(filter_key, []) %}checked{% endif %}
+                                                {% if is_disabled or is_forced %}disabled{% endif %}>
+                                            <label class="form-check-label small {% if is_forced %}text-success fw-bold{% endif %}">
+                                                {{ val }}
+                                            </label>
+                                            
+                                            {% if is_forced %}
+                                                <input type="hidden" name="{{ filter_key }}" value="{{ val }}">
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-dark w-100 mt-2">Застосувати</button>
+                    
+                    {% if request.query_params.get('for_build') %}
+                        <a href="/catalog/{{ category }}?for_build=true" class="btn btn-outline-danger w-100 mt-2 btn-sm">Скинути ручні фільтри</a>
+                    {% else %}
+                        <a href="/catalog/{{ category }}" class="btn btn-outline-danger w-100 mt-2 btn-sm">Скинути всі</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

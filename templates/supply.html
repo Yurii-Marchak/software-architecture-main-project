@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Поставка комплектуючих на склад</h2>
+    <a href="/" class="btn btn-secondary">На головну</a>
+</div>
+
+{% set supply_items = request.session.get('supply_cart', []) %}
+
+{% if supply_items %}
+<div class="card shadow-sm p-4">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Категорія</th>
+                <th>Найменування</th>
+                <th>Кількість для поставки</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in supply_items %}
+            <tr>
+                <td>{{ item.category | upper }}</td>
+                <td>{{ item.name }}</td>
+                <td>
+                    <input type="number" name="quantity_{{ loop.index }}" value="{{ item.quantity }}" class="form-control w-50" min="1" form="commitSupplyForm">
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="row bg-light p-3 rounded mt-3">
+        <div class="col-md-6 text-start align-self-center">
+            <form action="/supply/clear" method="post">
+                <button type="submit" class="btn btn-outline-danger">Очистити каталог поставки</button>
+            </form>
+        </div>
+        <div class="col-md-6 text-end">
+            <form action="/supply/commit" method="post" id="commitSupplyForm">
+                <button type="submit" class="btn btn-success btn-lg shadow-sm">Прийняти поставку</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-warning text-center p-4 shadow-sm">
+    <h5 class="alert-heading">Список поставки порожній</h5>
+    <p>Ви ще не додали жодного товару для поставки. Перейдіть до каталогу та скористайтесь кнопкою <b>"Прийняти поставку"</b> біля потрібних комплектуючих.</p>
+</div>
+{% endif %}
+{% endblock %}

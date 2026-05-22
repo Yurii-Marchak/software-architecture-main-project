@@ -8,31 +8,28 @@ class BuilderService:
         self.build_repo = build_repo
 
     def get_forced_filters(self, current_build_state: Dict[str, Any], next_category: str) -> Dict[str, Any]:
-        """
-        Аналізує поточний стан збірки та повертає словник примусових фільтрів для наступного кроку.
-        current_build_state виглядає так: {"CPU": {"socket": "LGA 1151", "power": 65}, "Motherboard": {...}}
-        """
+        """Аналізує поточний стан збірки та встановлює жорсткі обмеження для наступного кроку."""
         filters = {}
+        cat = next_category.lower()
         
-        if next_category == "motherboard" and "CPU" in current_build_state:
+        if cat == "motherboard" and "CPU" in current_build_state:
             filters["socket"] = current_build_state["CPU"].get("socket")
             
-        elif next_category == "memory" and "Motherboard" in current_build_state:
+        elif cat == "memory" and "Motherboard" in current_build_state:
             filters["type"] = current_build_state["Motherboard"].get("supported_memory_type")
             
-        elif next_category == "cooler" and "CPU" in current_build_state:
+        elif cat == "cooler" and "CPU" in current_build_state:
             filters["socket"] = current_build_state["CPU"].get("socket")
             
-        elif next_category == "case" and "Motherboard" in current_build_state:
+        elif cat == "case" and "Motherboard" in current_build_state:
             filters["size"] = current_build_state["Motherboard"].get("size")
             
-        elif next_category == "psu" and "CPU" in current_build_state and "GPU" in current_build_state:
-            # Значення power cpu + значення power gpu + 200w
-            required_power = current_build_state["CPU"].get("power", 0) + current_build_state["GPU"].get("power", 0) + 200
-            filters["min_power"] = required_power
+        elif cat == "psu" and "CPU" in current_build_state and "GPU" in current_build_state:
+            # power cpu + power gpu + 200
+            req_power = float(current_build_state["CPU"].get("power", 0)) + float(current_build_state["GPU"].get("power", 0)) + 200
+            filters["min_power"] = [str(req_power)]
             
         return filters
-
     async def save_build(self, name: str, components_names: Dict[str, str]) -> bool:
         """Перевіряє унікальність назви та зберігає конфігурацію в БД."""
         existing_build = await self.build_repo.get_by_name(name)

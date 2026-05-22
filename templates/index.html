@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card shadow-sm p-4 mb-4">
+    <div class="row mb-4">
+        <div class="col-md-4 text-start">
+            <a href="/builder" class="btn btn-primary mb-2 w-75">Зробити збірку</a><br>
+            <a href="/supply" class="btn btn-secondary mb-2 w-75">Поставка</a><br>
+            <a href="/orders" class="btn btn-info w-75 text-white">Закриті замовлення</a>
+        </div>
+        
+        <div class="col-md-4 text-center">
+            <form action="/search" method="get">
+                <input type="text" name="q" class="form-control" placeholder="Пошук по всьому каталогу...">
+                <button type="submit" class="btn btn-outline-dark mt-2">Знайти</button>
+            </form>
+        </div>
+        
+        <div class="col-md-4 text-end">
+            <a href="/cart" class="btn btn-warning mb-2 w-75">Кошик ({{ request.session.get('cart', [])|length }})</a><br>
+            <button class="btn btn-success mb-2 w-75" data-bs-toggle="modal" data-bs-target="#registerModal">Зареєструвати клієнта</button><br>
+            <button class="btn btn-info w-75 text-white" data-bs-toggle="modal" data-bs-target="#clientInfoModal">Інформація про клієнта</button>
+        </div>
+    </div>
+</div>
+
+<h3 class="mb-3">Каталог комплектуючих</h3>
+<div class="row row-cols-1 row-cols-md-4 g-4">
+    {% set categories = ['CPU', 'Motherboard', 'Memory', 'GPU', 'Case', 'Cooler', 'Storage', 'PSU', 'pc_builds'] %}
+    {% for cat in categories %}
+    <div class="col">
+        <div class="card h-100 text-center shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title text-uppercase">{{ cat }}</h5>
+                <a href="/catalog/{{ cat }}" class="btn btn-outline-primary mt-2">Перейти до розділу</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="/register" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">Реєстрація клієнта</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="email" name="email" class="form-control mb-2" placeholder="Електронна адреса" required>
+                    <input type="text" name="first_name" class="form-control mb-2" placeholder="Ім'я" required>
+                    <input type="text" name="last_name" class="form-control mb-2" placeholder="Прізвище" required>
+                    <input type="text" name="phone" class="form-control mb-2" placeholder="Номер телефону" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Зареєструвати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="clientInfoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="/client-info" method="get">
+                <div class="modal-header">
+                    <h5 class="modal-title">Інформація про клієнта</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="email" name="email" class="form-control" placeholder="Введіть email клієнта" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-info text-white">Знайти історію</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

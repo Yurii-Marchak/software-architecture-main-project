@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Конфігуратор Збірки ПК</h2>
+    <a href="/" class="btn btn-secondary">На головну</a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm p-4 mb-4">
+            <h4 class="mb-3">Поточна конфігурація</h4>
+            <table class="table align-middle">
+                <tbody>
+                    {% for cat in categories %}
+                    <tr>
+                        <td style="width: 25%;"><strong>{{ cat }}</strong></td>
+                        <td>
+                            {% if build.get(cat) %}
+                                <span class="text-success fw-bold">{{ build[cat].name }}</span>
+                            {% else %}
+                                <span class="text-muted fst-italic">Не обрано</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="/catalog/{{ cat }}?for_build=true" class="btn btn-sm btn-outline-primary">
+                                {% if build.get(cat) %}Змінити{% else %}Вибрати{% endif %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm p-4 bg-light border-success">
+            <h4 class="text-success">Оформлення збірки</h4>
+            <p class="text-muted small">Вкажіть унікальну назву збірки. Якщо назва унікальна - вона буде записана у колекцію <b>pc_builds</b>.</p>
+            
+            <form action="/builder/save" method="post" class="mt-2">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Назва збірки:</label>
+                    <input type="text" name="build_name" class="form-control" placeholder="Напр. Budget Gaming 2024" required>
+                </div>
+                <button type="submit" class="btn btn-success w-100 mb-2">Зберегти збірку</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

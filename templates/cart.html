@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Ваш Кошик</h2>
+    <a href="/" class="btn btn-secondary">На головну</a>
+</div>
+
+{% if cart %}
+<div class="card shadow-sm p-4">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Категорія</th>
+                <th>Найменування</th>
+                <th>Ціна за шт.</th>
+                <th>Кількість</th>
+                <th>Сума</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cart %}
+            <tr>
+                <td>{{ item.category | upper }}</td>
+                <td>{{ item.name }}</td>
+                <td>${{ item.price }}</td>
+                <td>
+                    <input type="number" value="{{ item.quantity }}" class="form-control w-50" min="1">
+                </td>
+                <td><b>${{ item.price * item.quantity }}</b></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="text-end mb-4">
+        <h4>Загальна сума: <span class="text-danger">${{ total }}</span></h4>
+    </div>
+
+    <div class="row bg-light p-3 rounded">
+        <div class="col-md-6 text-start align-self-center">
+            <form action="/cart/clear" method="post">
+                <button type="submit" class="btn btn-outline-danger">Очистити кошик</button>
+            </form>
+        </div>
+        <div class="col-md-6 text-end">
+            <form action="/cart/checkout" method="post" class="d-flex justify-content-end">
+                <input type="email" name="email" class="form-control w-50 me-2" placeholder="Email клієнта" required>
+                <button type="submit" class="btn btn-success">Завершити замовлення і оплатити</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-warning text-center">Кошик порожній. Перейдіть до каталогу.</div>
+{% endif %}
+{% endblock %}

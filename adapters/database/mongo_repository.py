@@ -34,6 +34,7 @@ class MongoUserRepository(IUserRepository):
     async def get_by_email(self, email: str) -> Optional[User]:
         doc = await self.db['users'].find_one({"email": email})
         if doc:
+            doc['_id'] = str(doc['_id']) # ДОДАНО: перетворення ObjectId у рядок
             return User(**doc)
         return None
 
@@ -61,8 +62,9 @@ class MongoOrderRepository(IOrderRepository):
     async def get_all(self) -> List[Order]:
         cursor = self.db['orders'].find({})
         docs = await cursor.to_list(length=None)
+        for doc in docs:
+            doc['_id'] = str(doc['_id']) # ДОДАНО: перетворення ObjectId у рядок
         return [Order(**doc) for doc in docs]
-
 
 class MongoPCBuildRepository(IPCBuildRepository):
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -75,5 +77,6 @@ class MongoPCBuildRepository(IPCBuildRepository):
     async def get_by_name(self, name: str) -> Optional[PCBuild]:
         doc = await self.db['pc_builds'].find_one({"name": name})
         if doc:
+            doc['_id'] = str(doc['_id']) # ДОДАНО: перетворення ObjectId у рядок
             return PCBuild(**doc)
         return None

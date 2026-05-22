@@ -104,13 +104,14 @@ async def main():
     
     # 6.2. Тестовий чек/замовлення (відповідно до вимог)
     test_order = {
-        "_id": "order_001", # Унікальне ID чека
+        "_id": "order_001",
+        "email": "client@example.com", # ДОДАНО: обов'язкове поле
         "items": [
-            {"name": "AMD Ryzen 5 5600X", "price": 250},
-            {"name": "Corsair Vengeance 16 GB", "price": 80}
+            {"name": "AMD Ryzen 5 5600X", "price": 250, "quantity": 1}, # ДОДАНО: quantity
+            {"name": "Corsair Vengeance 16 GB", "price": 80, "quantity": 1} # ДОДАНО: quantity
         ],
         "total_price": 330,
-        "date": datetime.now() # Дата покупки
+        "date": datetime.now()
     }
     await db['orders'].insert_one(test_order)
     

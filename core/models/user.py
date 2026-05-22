@@ -1,5 +1,5 @@
 # core/models/user.py
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import List, Optional
 
 class User(BaseModel):
