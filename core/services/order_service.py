@@ -76,3 +76,22 @@ class OrderService:
         """
         for item in supply_items:
             await self.component_repo.update_stock(item["category"], item["name"], item["quantity"])
+    async def get_filtered_orders(self, start_date: str = None, end_date: str = None) -> List[Order]:
+        """Отримання чеків з фільтрацією по даті за допомогою функціонального програмування."""
+        orders = await self.order_repo.get_all()
+        
+        if start_date and start_date.strip():
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            # Лямбда-фільтр: залишаємо чеки, дата яких більша або дорівнює початковій
+            orders = list(filter(lambda o: o.date >= start_dt, orders))
+            
+        if end_date and end_date.strip():
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+            # Розширюємо кінець дня до 23:59:59, щоб чек, пробитий ввечері, теж потрапив у фільтр
+            end_dt = end_dt.replace(hour=23, minute=59, second=59)
+            # Лямбда-фільтр: залишаємо чеки, дата яких менша або дорівнює кінцевій
+            orders = list(filter(lambda o: o.date <= end_dt, orders))
+            
+        # Сортуємо чеки від найновіших до найстаріших
+        orders.sort(key=lambda o: o.date, reverse=True)
+        return orders

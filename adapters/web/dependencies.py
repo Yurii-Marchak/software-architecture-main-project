@@ -1,4 +1,5 @@
-# adapters/web/dependencies.py
+import os
+from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi import Request
 
@@ -14,12 +15,21 @@ from adapters.database.mongo_repository import (
 )
 from adapters.email.smtp_email import GoogleSMTPAdapter
 
+# Завантажуємо змінні середовища з файлу .env
+load_dotenv()
+
+# ТИМЧАСОВА ПЕРЕВІРКА (видаліть після успіху)
+print("EMAIL З .ENV:", os.getenv("SMTP_EMAIL"))
+print("PASSWORD З .ENV:", os.getenv("SMTP_PASSWORD"))
 # Ініціалізація підключення до MongoDB
-client = AsyncIOMotorClient('mongodb://localhost:27017/')
+client = AsyncIOMotorClient(os.getenv("MONGO_URI", "mongodb://localhost:27017/"))
 db = client['pc_warehouse']
 
-# Налаштування Email Адаптера (замініть на ваші дані або використовуйте змінні оточення .env)
-email_adapter = GoogleSMTPAdapter("your_email@gmail.com", "your_app_password")
+# Налаштування Email Адаптера через змінні середовища
+email_adapter = GoogleSMTPAdapter(
+    sender_email=os.getenv("SMTP_EMAIL"), 
+    app_password=os.getenv("SMTP_PASSWORD")
+)
 
 # Фабричні функції для FastAPI Depends
 def get_catalog_service() -> CatalogService:

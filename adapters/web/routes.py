@@ -67,6 +67,7 @@ async def global_search(
         "forced_filters": {},
         "base_query_string": f"&q={q}"
     })
+
 @router.get("/catalog/{category}", response_class=HTMLResponse)
 async def catalog(
     request: Request, 
@@ -215,10 +216,20 @@ async def pc_builder(request: Request):
     return templates.TemplateResponse("builder.html", {"request": request, "build": build, "categories": categories})
 
 @router.get("/orders", response_class=HTMLResponse)
-async def closed_orders(request: Request, order_service: OrderService = Depends(get_order_service)):
-    """Закриті замовлення (чеки)"""
-    orders = await order_service.order_repo.get_all()
-    return templates.TemplateResponse("orders.html", {"request": request, "orders": orders})
+async def closed_orders(
+    request: Request, 
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    order_service: OrderService = Depends(get_order_service)
+):
+    """Закриті замовлення (чеки) з фільтром по даті"""
+    orders = await order_service.get_filtered_orders(start_date, end_date)
+    return templates.TemplateResponse("orders.html", {
+        "request": request, 
+        "orders": orders,
+        "start_date": start_date,
+        "end_date": end_date
+    })
 
 # --- ОБРОБНИКИ ДЛЯ ПОСТАВКИ (SUPPLY) ---
 

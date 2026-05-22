@@ -12,20 +12,22 @@ class GoogleSMTPAdapter(IEmailSender):
     async def send_receipt(self, email: str, order: Order) -> bool:
         """
         Відправляє лист-чек використовуючи SMTP.
-        Хоча smtplib є синхронною, ми обернули її в async метод для збереження архітектурного контракту.
         """
+        if not self.sender_email or not self.app_password:
+            print("Помилка: Не задано EMAIL або ПАРОЛЬ у конфігурації!")
+            return False
+
         msg = MIMEMultipart()
         msg['From'] = self.sender_email
         msg['To'] = email
         msg['Subject'] = f"Чек про покупку #{order.id}"
 
-        # Формування HTML-списку покупок з найменуванням, кількістю та роздрібною ціною
+        # Формування HTML-списку покупок
         items_html = "".join([
             f"<li>{item.name} — {item.quantity} шт. (Ціна: ${item.price})</li>" 
             for item in order.items
         ])
         
-        # Повні деталі замовлення включно з id чеку, часом покупки та загальною ціною
         body = f"""
         <html>
             <body>
@@ -47,10 +49,13 @@ class GoogleSMTPAdapter(IEmailSender):
         msg.attach(MIMEText(body, 'html'))
 
         try:
-            # Використання контекстного менеджера (with) гарантує безпечне закриття з'єднання з сервером
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            # Використовуємо порт 587 та STARTTLS (як у вашому старому проєкті)
+            with smtplib.SMTP('smtp.gmail.com', 587) as server:
+                server.ehlo() # Ініціалізація з'єднання
+                server.starttls() # Шифрування
                 server.login(self.sender_email, self.app_password)
                 server.send_message(msg)
+            print(f"Чек успішно відправлено на {email}!")
             return True
         except Exception as e:
             print(f"Помилка відправки листа: {e}")

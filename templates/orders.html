@@ -6,10 +6,29 @@
     <a href="/" class="btn btn-secondary">На головну</a>
 </div>
 
+<div class="card shadow-sm mb-4 p-3 bg-light">
+    <form action="/orders" method="get">
+        <div class="row align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Починаючи з дати:</label>
+                <input type="date" name="start_date" class="form-control" value="{{ start_date or '' }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Закінчуючи датою:</label>
+                <input type="date" name="end_date" class="form-control" value="{{ end_date or '' }}">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary">Застосувати фільтр</button>
+                <a href="/orders" class="btn btn-outline-danger ms-2">Скинути</a>
+            </div>
+        </div>
+    </form>
+</div>
+
 <div class="row">
     {% for order in orders %}
     <div class="col-md-6 mb-3">
-        <div class="card shadow-sm border-info">
+        <div class="card shadow-sm border-info h-100">
             <div class="card-header bg-info text-white d-flex justify-content-between">
                 <span>Чек ID: <b>{{ order.id }}</b></span>
                 <span>{{ order.date.strftime("%Y-%m-%d %H:%M") }}</span>
@@ -17,17 +36,19 @@
             <div class="card-body">
                 <p class="mb-1">Email клієнта: <b>{{ order.email }}</b></p>
                 <hr>
-                <ul>
+                <ul class="mb-3" style="font-size: 0.9em;">
                     {% for item in order.items %}
                         <li>{{ item.name }} — {{ item.quantity }} шт. (Ціна: ${{ item.price }})</li>
                     {% endfor %}
                 </ul>
-                <h5 class="text-end mt-3 text-success">Сума: ${{ order.total_price }}</h5>
+                <h5 class="text-end mt-auto text-success">Загальна сума: ${{ order.total_price }}</h5>
             </div>
         </div>
     </div>
     {% else %}
-    <div class="alert alert-info">Немає жодного закритого замовлення.</div>
+    <div class="alert alert-warning text-center w-100">
+        За вибраний період чеків не знайдено.
+    </div>
     {% endfor %}
 </div>
 {% endblock %}
