@@ -6,13 +6,11 @@ from core.models.user import User
 from core.models.order import Order
 from core.models.pc_build import PCBuild
 
-
 class MongoComponentRepository(IComponentRepository):
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
 
     async def get_all_by_category(self, category: str) -> List[dict]:
-        # Витягує всі документи з відповідної колекції (наприклад, 'CPU', 'Case')
         cursor = self.db[category].find({})
         return await cursor.to_list(length=None)
 
@@ -20,7 +18,6 @@ class MongoComponentRepository(IComponentRepository):
         return await self.db[category].find_one({"name": name})
 
     async def update_stock(self, category: str, name: str, quantity_change: int) -> bool:
-        # $inc збільшує або зменшує (якщо число від'ємне) значення поля stock
         result = await self.db[category].update_one(
             {"name": name},
             {"$inc": {"stock": quantity_change}}
@@ -35,13 +32,11 @@ class MongoUserRepository(IUserRepository):
     async def get_by_email(self, email: str) -> Optional[User]:
         doc = await self.db['users'].find_one({"email": email})
         if doc:
-            # ДОДАНО: перетворення ObjectId у рядок
             doc['_id'] = str(doc['_id'])
             return User(**doc)
         return None
 
     async def create(self, user: User) -> bool:
-        # Зберігаємо об'єкт Pydantic у вигляді словника
         result = await self.db['users'].insert_one(user.model_dump(by_alias=True, exclude_none=True))
         return result.inserted_id is not None
 
@@ -65,10 +60,8 @@ class MongoOrderRepository(IOrderRepository):
         cursor = self.db['orders'].find({})
         docs = await cursor.to_list(length=None)
         for doc in docs:
-            # ДОДАНО: перетворення ObjectId у рядок
             doc['_id'] = str(doc['_id'])
         return [Order(**doc) for doc in docs]
-
 
 class MongoPCBuildRepository(IPCBuildRepository):
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -81,7 +74,6 @@ class MongoPCBuildRepository(IPCBuildRepository):
     async def get_by_name(self, name: str) -> Optional[PCBuild]:
         doc = await self.db['pc_builds'].find_one({"name": name})
         if doc:
-            # ДОДАНО: перетворення ObjectId у рядок
             doc['_id'] = str(doc['_id'])
             return PCBuild(**doc)
         return None

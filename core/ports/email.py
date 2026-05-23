@@ -1,7 +1,6 @@
-# core/ports/email.py
+
 from abc import ABC, abstractmethod
 from core.models.order import Order
-
 
 class IEmailSender(ABC):
     @abstractmethod

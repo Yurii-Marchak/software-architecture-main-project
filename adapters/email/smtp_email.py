@@ -4,7 +4,6 @@ from email.mime.multipart import MIMEMultipart
 from core.ports.email import IEmailSender
 from core.models.order import Order
 
-
 class GoogleSMTPAdapter(IEmailSender):
     def __init__(self, sender_email: str, app_password: str):
         self.sender_email = sender_email
@@ -23,12 +22,12 @@ class GoogleSMTPAdapter(IEmailSender):
         msg['To'] = email
         msg['Subject'] = f"Чек про покупку #{order.id}"
 
-        # Формування HTML-списку покупок
+
         items_html = "".join([
-            f"<li>{item.name} — {item.quantity} шт. (Ціна: ${item.price})</li>"
+            f"<li>{item.name} — {item.quantity} шт. (Ціна: ${item.price})</li>" 
             for item in order.items
         ])
-
+        
         body = f"""
         <html>
             <body>
@@ -46,14 +45,13 @@ class GoogleSMTPAdapter(IEmailSender):
             </body>
         </html>
         """
-
+        
         msg.attach(MIMEText(body, 'html'))
 
         try:
-            # Використовуємо порт 587 та STARTTLS (як у вашому старому проєкті)
             with smtplib.SMTP('smtp.gmail.com', 587) as server:
-                server.ehlo()  # Ініціалізація з'єднання
-                server.starttls()  # Шифрування
+                server.ehlo()
+                server.starttls()
                 server.login(self.sender_email, self.app_password)
                 server.send_message(msg)
             print(f"Чек успішно відправлено на {email}!")

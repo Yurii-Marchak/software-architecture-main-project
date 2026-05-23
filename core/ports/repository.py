@@ -1,10 +1,8 @@
-# core/ports/repository.py
 from abc import ABC, abstractmethod
-from typing import List, Optional, Any
+from typing import List, Optional
 from core.models.user import User
 from core.models.order import Order
 from core.models.pc_build import PCBuild
-
 
 class IComponentRepository(ABC):
     @abstractmethod
@@ -22,7 +20,6 @@ class IComponentRepository(ABC):
         """Змінює кількість товару на складі (додає або віднімає)"""
         pass
 
-
 class IUserRepository(ABC):
     @abstractmethod
     async def get_by_email(self, email: str) -> Optional[User]:
@@ -33,12 +30,11 @@ class IUserRepository(ABC):
     async def create(self, user: User) -> bool:
         """Реєстрація нового клієнта"""
         pass
-
+    
     @abstractmethod
     async def add_order_to_user(self, email: str, order_id: str) -> bool:
         """Додає ID нового чеку в історію користувача"""
         pass
-
 
 class IOrderRepository(ABC):
     @abstractmethod
@@ -50,7 +46,6 @@ class IOrderRepository(ABC):
     async def get_all(self) -> List[Order]:
         """Отримання списку всіх закритих замовлень"""
         pass
-
 
 class IPCBuildRepository(ABC):
     @abstractmethod
