@@ -10,7 +10,7 @@ def mock_component_repo():
 def catalog_service(mock_component_repo):
     return CatalogService(component_repo=mock_component_repo)
 
-# Фейкові дані для тестування лямбда-фільтрів у пам'яті
+
 FAKE_CATALOG = [
     {"name": "Intel Core i3", "price": 100, "brand": "Intel", "power": 65, "frequency": 3.6},
     {"name": "AMD Ryzen 5", "price": 200, "brand": "AMD", "power": 65, "frequency": 4.2},
@@ -73,7 +73,7 @@ async def test_get_catalog_ignore_empty_filters(catalog_service, mock_component_
     filters = {"min_price": [""], "brand": ["   "]}
     
     result = await catalog_service.get_filtered_catalog("CPU", filters=filters)
-    assert len(result) == 3 # Жоден фільтр не застосувався
+    assert len(result) == 3
 
 @pytest.mark.asyncio
 async def test_get_catalog_invalid_number_format(catalog_service, mock_component_repo):
@@ -82,12 +82,12 @@ async def test_get_catalog_invalid_number_format(catalog_service, mock_component
     filters = {"min_price": ["not-a-number"]}
     
     result = await catalog_service.get_filtered_catalog("CPU", filters=filters)
-    assert len(result) == 3 # Фільтр з помилкою був проігнорований
+    assert len(result) == 3
 
 @pytest.mark.asyncio
 async def test_get_catalog_pagination(catalog_service, mock_component_repo):
     """Тест: Пагінація повинна повертати максимум 20 елементів (зріз масиву)."""
-    # Створюємо масив з 25 однакових елементів
+
     mock_component_repo.get_all_by_category.return_value = [{"name": "Item"}] * 25
     
     page_1 = await catalog_service.get_filtered_catalog("CPU", page=1)
@@ -99,7 +99,7 @@ async def test_get_catalog_pagination(catalog_service, mock_component_repo):
 @pytest.mark.asyncio
 async def test_search_by_name(catalog_service, mock_component_repo):
     """Тест: Пошук по імені делегується репозиторію."""
-    # Мокаємо всі можливі варіанти, щоб уникнути конфлікту імен
+
     mock_component_repo.search.return_value = [FAKE_CATALOG[0]]
     mock_component_repo.search_by_name.return_value = [FAKE_CATALOG[0]]
     mock_component_repo.get_all_by_category.return_value = [FAKE_CATALOG[0]]
@@ -110,12 +110,12 @@ async def test_search_by_name(catalog_service, mock_component_repo):
 @pytest.mark.asyncio
 async def test_get_catalog_pc_builds_enrichment(catalog_service, mock_component_repo):
     """Тест: Збагачення готових збірок (підрахунок ціни з компонентів)."""
-    # Імітуємо колекцію збірок
+
     mock_component_repo.get_all_by_category.return_value = [
         {"name": "Gaming PC", "components": {"CPU": "i9", "Case": "NZXT"}}
     ]
     
-    # Імітуємо пошук окремих компонентів на складі
+
     async def mock_get_by_name(cat, name):
         if cat == "CPU": return {"name": "i9", "price": 500}
         if cat == "Case": return {"name": "NZXT", "price": 100, "image": "case.jpg"}
@@ -125,5 +125,5 @@ async def test_get_catalog_pc_builds_enrichment(catalog_service, mock_component_
     
     result = await catalog_service.get_filtered_catalog("pc_builds")
     assert len(result) == 1
-    assert result[0]["price"] == 600.0 # 500 + 100
+    assert result[0]["price"] == 600.0
     assert result[0]["image"] == "case.jpg"

@@ -2,9 +2,6 @@ import pytest
 from unittest.mock import AsyncMock
 from core.services.builder_service import BuilderService
 
-# ==========================================
-# ФІКСТУРИ ДЛЯ ІЗОЛЯЦІЇ (MOCKING)
-# ==========================================
 
 @pytest.fixture
 def mock_build_repo():
@@ -17,9 +14,6 @@ def builder_service(mock_build_repo):
     return BuilderService(build_repo=mock_build_repo)
 
 
-# ==========================================
-# ТЕСТИ ЛОГІКИ ПРИМУСОВИХ ФІЛЬТРІВ (get_forced_filters)
-# ==========================================
 
 def test_get_forced_filters_empty_state(builder_service):
     """Тест: Якщо збірка порожня, жодні примусові фільтри не застосовуються."""
@@ -62,16 +56,16 @@ def test_get_forced_filters_psu_calculation(builder_service):
         "GPU": {"power": 320}
     }
     filters = builder_service.get_forced_filters(build_state, "psu")
-    assert filters == {"min_power": ["625.0"]}  # 105 + 320 + 200 = 625
+    assert filters == {"min_power": ["625.0"]}
 
 def test_get_forced_filters_psu_missing_power(builder_service):
     """Edge Case: Розрахунок БЖ, якщо для комплектуючих не вказана потужність (None або відсутня)."""
     build_state = {
-        "CPU": {"power": None},  # Погані дані з БД
-        "GPU": {}                # Взагалі немає поля
+        "CPU": {"power": None},
+        "GPU": {}
     }
     filters = builder_service.get_forced_filters(build_state, "psu")
-    assert filters == {"min_power": ["200.0"]}  # 0 + 0 + 200 = 200
+    assert filters == {"min_power": ["200.0"]}
 
 def test_get_forced_filters_case_insensitivity(builder_service):
     """Edge Case: Сервіс повинен ігнорувати регістр назви категорії (MoTheRbOaRd == motherboard)."""
@@ -80,31 +74,28 @@ def test_get_forced_filters_case_insensitivity(builder_service):
     assert filters == {"socket": "AM4"}
 
 
-# ==========================================
-# ТЕСТИ ЗБЕРЕЖЕННЯ ЗБІРКИ (save_build) АСИНХРОННІ
-# ==========================================
 
 @pytest.mark.asyncio
 async def test_save_build_success(builder_service, mock_build_repo):
     """Тест: Успішне збереження нової унікальної збірки."""
-    # Налаштовуємо Mock: база каже, що збірки з такою назвою немає (повертає None)
+
     mock_build_repo.get_by_name.return_value = None
-    # База каже, що створення пройшло успішно
+
     mock_build_repo.create.return_value = True
 
     components = {"CPU": "Intel i5", "GPU": "RTX 3060"}
     result = await builder_service.save_build("My Awesome PC", components)
 
     assert result is True
-    # Перевіряємо, чи сервіс справді звертався до бази для перевірки імені
+
     mock_build_repo.get_by_name.assert_called_once_with("My Awesome PC")
-    # Перевіряємо, чи викликався метод створення
+
     mock_build_repo.create.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_save_build_duplicate_name(builder_service, mock_build_repo):
     """Edge Case: Спроба зберегти збірку з назвою, яка вже існує в БД."""
-    # Налаштовуємо Mock: база знаходить існуючу збірку
+
     mock_build_repo.get_by_name.return_value = {"name": "Existing PC", "components": {}}
     
     components = {"CPU": "AMD Ryzen 5"}
@@ -112,14 +103,14 @@ async def test_save_build_duplicate_name(builder_service, mock_build_repo):
 
     assert result is False
     mock_build_repo.get_by_name.assert_called_once_with("Existing PC")
-    # Перевіряємо, що метод створення НЕ викликався, бо назва зайнята
+
     mock_build_repo.create.assert_not_called()
 
 @pytest.mark.asyncio
 async def test_save_build_database_failure(builder_service, mock_build_repo):
     """Edge Case: Назва унікальна, але сталася помилка запису в саму БД."""
     mock_build_repo.get_by_name.return_value = None
-    # Імітуємо відмову бази даних при збереженні
+
     mock_build_repo.create.return_value = False
 
     result = await builder_service.save_build("Cursed PC", {"CPU": "Intel"})

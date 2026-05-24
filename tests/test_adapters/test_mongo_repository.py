@@ -13,37 +13,31 @@ from core.models.user import User
 from core.models.pc_build import PCBuild
 from core.ports.repository import IComponentRepository
 
-# ==========================================
-# ФІКСТУРА ДЛЯ ФЕЙКОВОЇ БАЗИ ДАНИХ (MOTOR)
-# ==========================================
 
 @pytest.fixture
 def mock_db():
     db = MagicMock()
     mock_collection = AsyncMock()
     
-    # 1. ФІКС ДЛЯ КУРСОРУ (find не є асинхронним в motor)
+
     mock_cursor = MagicMock()  
     mock_cursor.to_list = AsyncMock(return_value=[]) 
     
-    # ФІКС ТУТ: Примусово робимо find звичайною синхронною функцією (MagicMock)
+
     mock_collection.find = MagicMock(return_value=mock_cursor)
     
-    # 2. ФІКС ДЛЯ update_one (щоб result.modified_count > 0 працювало)
+
     mock_update_result = MagicMock()
     mock_update_result.modified_count = 1
     mock_collection.update_one.return_value = mock_update_result
     
-    # 3. ФІКС ДЛЯ create (insert_one)
+
     mock_insert_result = MagicMock()
     mock_insert_result.inserted_id = "fake_id"
     mock_collection.insert_one.return_value = mock_insert_result
 
     db.__getitem__.return_value = mock_collection
     return db, mock_collection, mock_cursor
-# ==========================================
-# ТЕСТИ COMPONENT REPOSITORY
-# ==========================================
 
 @pytest.mark.asyncio
 async def test_component_get_by_name(mock_db):
@@ -63,7 +57,7 @@ def test_ports_interfaces():
         async def update_stock(self, cat, name, qty): pass
     
     repo = MockRepo()
-    # Виклик методів для "покриття"
+
     import asyncio
     asyncio.run(repo.get_all_by_category("cpu"))
     assert True
@@ -80,9 +74,6 @@ async def test_component_update_stock(mock_db):
         {"$inc": {"stock": -2}}
     )
 
-# ==========================================
-# ТЕСТИ ORDER REPOSITORY
-# ==========================================
 
 @pytest.mark.asyncio
 async def test_order_create(mock_db):
@@ -116,10 +107,6 @@ async def test_order_get_all(mock_db):
     assert len(orders) == 1
     assert orders[0].email == "a@a.com"
 
-# ==========================================
-# ТЕСТИ USER REPOSITORY
-# ==========================================
-
 @pytest.mark.asyncio
 async def test_user_get_by_email(mock_db):
     db, mock_col, _ = mock_db
@@ -145,10 +132,6 @@ async def test_user_add_order(mock_db):
         {"email": "user@gmail.com"},
         {"$push": {"order_ids": "order_999"}}
     )
-
-# ==========================================
-# ТЕСТИ PC BUILD REPOSITORY
-# ==========================================
 
 @pytest.mark.asyncio
 async def test_pc_build_create(mock_db):
